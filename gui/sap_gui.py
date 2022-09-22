@@ -62,12 +62,21 @@ class SAP_Gui:
             self.__application = None
 
     @error_handler
-    def login(self, user, password) -> 'SAP_Gui':
+    def login(self, user: str, password: str) -> 'SAP_Gui':
         self.__session.findById("wnd[0]").resizeWorkingPane(173, 36, 0)
         self.__session.findById("wnd[0]/usr/txtRSYST-BNAME").text = user
         self.__session.findById("wnd[0]/usr/pwdRSYST-BCODE").text = password
         self.__session.findById("wnd[0]").sendVKey(0)
         return self
+
+    @error_handler
+    def change_password(self, user: str, password: str, new_password: str) -> 'SAP_Gui':
+        self.__session.findById("wnd[0]/usr/txtRSYST-BNAME").text = user
+        self.__session.findById("wnd[0]/usr/pwdRSYST-BCODE").text = password
+        self.__session.findById("wnd[0]/tbar[1]/btn[5]").press()
+        self.__session.findById("wnd[1]/usr/pwdRSYST-NCODE").text = new_password
+        self.__session.findById("wnd[1]/usr/pwdRSYST-NCOD2").text = new_password
+        self.__session.findById("wnd[1]/tbar[0]/btn[0]").press()
 
     @error_handler
     def open(self, tr: Transaction) -> 'SAP_Gui':
