@@ -4,28 +4,45 @@ from pathlib import Path
 from dotenv import dotenv_values
 
 from gui import sap_gui
-from transactions import license
-
+from transactions import get_transaction
 
 config = dotenv_values(".env")
+path = config["PATH"]
+file_name = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.xls"
 
-path = r"C:/Users/alobo/Desktop/Final"
-file_name = f"license_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xls"
-license_company_code = "1000"
+def main() -> str:
+    gui = sap_gui.SAP_Gui(
+        gui_path=config["GUI_PATH"],
+        name=config["CONNECTION_NAME"],
+        instance_number=config["INSTANCE_NUMBER"]
+    )
 
-gui = sap_gui.SAP_Gui(
-    gui_path=config["GUI_PATH"],
-    name=config["CONNECTION_NAME"],
-    instance_number=config["INSTANCE_NUMBER"]
-)
+    transaction = get_transaction(
+        transaction="license",
+        config={
+            "company_code": ["1000"],
+            "path": path,
+            "file_name": file_name
+        })
 
-lic = license.License(
-    company_code=["1000",],
-    file_path=path,
-    file_name=file_name,
-)
-gui.open_gui().create_session().login(config["USER"], config["PASS"]).open_tx(lic).process_tx(lic).save_tx(lic).close_tx(lic).close_session()
+    if not transaction:
+        return "Transaccion no encontrada"
 
-result = Path(f"{path}/{file_name}")
-if result.exists():
-    print(f"Archivo creado correctamente: {result.name}")
+    gui.open_gui() \
+        .create_session() \
+        .login(config["USER"], config["PASS"]) \
+        .open(transaction) \
+        .config(transaction) \
+        .exec(transaction) \
+        .config_report(transaction) \
+        .save(transaction) \
+        .close(transaction) \
+        .close_session()
+
+    result = Path(f"{path}/{transaction.file_name}")
+    if result.exists():
+        return f"Archivo creado correctamente: {result.name}"
+
+
+if __name__ == "__main__":
+    print(main())
