@@ -4,7 +4,7 @@ from subprocess import call
 from typing import Any, Optional
 from pathlib import Path
 
-from error_handle import error_handler
+from gui.error_handle import error_handler
 from tx import Transaction
 
 
@@ -67,26 +67,34 @@ class SAP_Gui:
         self.__session.findById("wnd[0]/usr/txtRSYST-BNAME").text = user
         self.__session.findById("wnd[0]/usr/pwdRSYST-BCODE").text = password
         self.__session.findById("wnd[0]").sendVKey(0)
-        sleep(5)
         return self
 
     @error_handler
-    def open_tx(self, tr: Transaction) -> 'SAP_Gui':
+    def open(self, tr: Transaction) -> 'SAP_Gui':
         tr.open(self.__session)
         return self
 
     @error_handler
-    def process_tx(self, tr: Transaction) -> 'SAP_Gui':
-        tr.process(self.__session)
-        sleep(2)
+    def config(self, tr: Transaction) -> 'SAP_Gui':
+        tr.config(self.__session)
         return self
 
     @error_handler
-    def save_tx(self, tr: Transaction) -> 'SAP_Gui':
+    def exec(self, tr: Transaction) -> 'SAP_Gui':
+        tr.exec(self.__session)
+        return self
+
+    @error_handler
+    def config_report(self, tr: Transaction) -> 'SAP_Gui':
+        tr.config_report(self.__session)
+        return self
+
+    @error_handler
+    def save(self, tr: Transaction) -> 'SAP_Gui':
         tr.save(self.__session)
         return self
 
     @error_handler
-    def close_tx(self, tr: Transaction) -> 'SAP_Gui':
+    def close(self, tr: Transaction) -> 'SAP_Gui':
         tr.close(self.__session)
         return self

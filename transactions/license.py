@@ -17,7 +17,7 @@ class License:
 
         return self
 
-    def process(self, session: win32com.client.CDispatch) -> 'License':
+    def config(self, session: win32com.client.CDispatch) -> 'License':
         session.findById("wnd[0]/tbar[1]/btn[17]").press()
         session.findById("wnd[1]/usr/txtV-LOW").text = "LIC*"
         session.findById("wnd[1]/usr/txtENAME-LOW").text = ""
@@ -29,8 +29,15 @@ class License:
         for i, val in enumerate(self.company_code):
             session.findById(f"wnd[1]/usr/tabsTAB_STRIP/tabpSIVA/ssubSCREEN_HEADER:SAPLALDB:3010/tblSAPLALDBSINGLE/ctxtRSCSEL_255-SLOW_I[1,{i}]").text = val
         session.findById("wnd[1]/tbar[0]/btn[8]").press()
+
+        return self
+
+    def exec(self, session: win32com.client.CDispatch) -> 'License':
         session.findById("wnd[0]/tbar[1]/btn[8]").press()
 
+        return self
+
+    def config_report(self, session: win32com.client.CDispatch) -> 'License':
         return self
 
     def save(self, session: win32com.client.CDispatch) -> 'License':
