@@ -18,7 +18,7 @@ def main() -> str:
     )
 
     transaction = get_transaction(
-        transaction="license",
+        transaction="system_assets",
         config={
             "company_code": ["1000"],
             "path": path,
