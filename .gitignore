@@ -1,4 +1,5 @@
 .env
 .venv
+.vscode
 test.py
 *.pyc
