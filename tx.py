@@ -3,6 +3,7 @@ import win32com.client
 
 class Transaction(Protocol):
     file_name: str
+    transaction_code: str
 
     def open(self, session: win32com.client.CDispatch) -> 'Transaction':
         ...

@@ -71,13 +71,17 @@ def select_transaction() -> Transaction:
             "file_name": file_name
         })
 
-def exec_transaction(gui: sap_gui.SAP_Gui, tx: Transaction) -> None:
+def exec_transaction(gui: sap_gui.SAP_Gui, tx: Transaction) -> str:
     gui.open(tx)[1]
+    if not gui.hasAccess(tx):
+        return f"No se cuenta con acceso a la transacción {tx.transaction_code}"
     gui.config(tx)[1]
     gui.exec(tx)[1]
     gui.config_report(tx)[1]
     gui.save(tx)[1]
     gui.close(tx)[1]
+
+    return ""
 
 def main() -> Tuple[bool, str]:
     gui = sap_gui.SAP_Gui(
@@ -103,8 +107,11 @@ def main() -> Tuple[bool, str]:
     if not gui.logged_in()[0]:
         return False, "No se pudo iniciar sesión con las credenciales provistas"
 
-    exec_transaction(gui=gui, tx=transaction)
+    result = exec_transaction(gui=gui, tx=transaction)
     gui.close_session()
+
+    if result:
+        return False, result
 
     result = Path(path) / transaction.file_name
     if result.exists():

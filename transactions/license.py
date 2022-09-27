@@ -6,14 +6,14 @@ class License:
         Clase que permite la conexión con SAP para obtener un archivo Excel con el listado de Licencias de la Compañía utilizando la transacción S_ALR_87011967
     """
     def __init__(self, company_code:List[str], file_path: str, file_name: str) -> None:
-        self.transaction = "S_ALR_87011967"
+        self.transaction_code = "S_ALR_87011967"
         self.company_code = company_code
         self.file_path = file_path
         self.file_name = file_name
         self.variant = "LIC*"
 
     def open(self, session: win32com.client.CDispatch) -> 'License':
-        session.findById("wnd[0]/tbar[0]/okcd").text = f"/n{self.transaction}"
+        session.findById("wnd[0]/tbar[0]/okcd").text = f"/n{self.transaction_code}"
         session.findById("wnd[0]").sendVKey(0)
 
         return self

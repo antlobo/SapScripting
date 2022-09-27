@@ -108,7 +108,7 @@ class SAP_Gui:
         return self
 
     @error_handler
-    def logged_in(self) -> bool:
+    def logged_in(self) -> Tuple[bool, str]:
         """Revisa que se haya logrado iniciado sesión con base en 3 elementos que aparecen o desaparecen al inciar sesión
 
         Returns:
@@ -137,6 +137,16 @@ class SAP_Gui:
         if self.__session:
             tr.open(self.__session)
         return self
+
+    def hasAccess(self, tr: Transaction) -> Tuple['SAP_Gui', str]:
+        """_summary_
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
+        return self.__session.Info.Transaction == tr.transaction_code
 
     @error_handler
     def config(self, tr: Transaction) -> Tuple['SAP_Gui', str]:
