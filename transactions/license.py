@@ -5,6 +5,8 @@ class License:
     """
         Clase que permite la conexión con SAP para obtener un archivo Excel con el listado de Licencias de la Compañía utilizando la transacción S_ALR_87011967
     """
+    fields: dict = {"company_code": "Código de compañía separados por coma"}
+
     def __init__(self, company_code:List[str], file_path: str, file_name: str) -> None:
         self.transaction_code = "S_ALR_87011967"
         self.company_code = company_code

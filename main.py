@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Tuple
+from typing import Optional, Tuple
 
 from dotenv import dotenv_values
 
 from gui import sap_gui
-from transactions import get_transaction
+from transactions import get_transaction, get_transaction_class, get_transaction_fields, transaction_list
 from tx import Transaction
 
 config = dotenv_values(".env")
@@ -62,14 +62,25 @@ def change_password(gui: sap_gui.SAP_Gui) -> bool:
     config["PASS_LAST_CHANGE"] = datetime.now().date().strftime("%d/%m/%Y")
     return True
 
-def select_transaction() -> Transaction:
-    return get_transaction(
-        transaction="license",
-        config={
-            "company_code": ["1000"],
-            "path": path,
-            "file_name": file_name
-        })
+def select_transaction(transaction: str = "") -> Optional[Transaction]:
+    if not transaction:
+        transaction = (input(f"Ingrese cuál transacción desea de la siguiente lista, {', '.join([val for val in transaction_list.keys()])}: ")).strip()
+
+    config = {
+        "file_path": path,
+        "file_name": file_name
+    }
+    transaction_class = get_transaction_class(transaction)
+    if transaction_class:
+        transaction_fields = get_transaction_fields(transaction_class).items()
+        for field, hint in transaction_fields:
+            value = (input(f"Ingrese el valor para {field}, {hint}: ")).split(",")
+            if "coma" in str(hint).lower():
+                config[field] = [val.strip() for val in value]
+            else:
+                config[field] = value
+
+        return get_transaction(transaction=transaction_class, config=config)
 
 def exec_transaction(gui: sap_gui.SAP_Gui, tx: Transaction) -> str:
     gui.open(tx)[1]

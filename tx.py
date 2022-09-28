@@ -4,6 +4,7 @@ import win32com.client
 class Transaction(Protocol):
     file_name: str
     transaction_code: str
+    fields: dict
 
     def open(self, session: win32com.client.CDispatch) -> 'Transaction':
         ...
