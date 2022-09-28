@@ -18,10 +18,11 @@ class SAP_Gui:
         6. Se ejecuta la transacción de SAP en el siguiente orden:
             1. open
             2. config
-            3. exec
-            4. config_report
-            5. save
-            6. close
+            3. hasAccess
+             3.1. exec
+             3.2. config_report
+             3.3. save
+             3.4. close
         7. Se cierra la conexión con SAP mediante la función close_session()
     """
     __application: Any
@@ -129,7 +130,6 @@ class SAP_Gui:
     @error_handler
     def is_only_session(self) -> Tuple[bool, str]:
         if self.__session and self.__application:
-            print(f"{self.__application.Children.count=}{self.__connection.Children.count=}")
             return self.__application.Children.count == 1 and \
                 self.__connection.Children.count == 1
         return False

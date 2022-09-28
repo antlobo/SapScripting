@@ -108,7 +108,6 @@ def main() -> Tuple[bool, str]:
         gui.close_session()
         return False, "No se pudo iniciar sesión con las credenciales provistas"
 
-    print(gui.is_only_session())
     if not gui.is_only_session()[0]:
         gui.close_session()
         return False, "No se pudo iniciar sesión debido a que existen otras sesiones abiertas, \n" + \
