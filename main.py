@@ -104,8 +104,15 @@ def main() -> Tuple[bool, str]:
         .create_session()[0] \
         .login(config["USER"], config["PASS"])
 
-    if not gui.logged_in()[0]:
+    if not gui.is_logged()[0]:
+        gui.close_session()
         return False, "No se pudo iniciar sesión con las credenciales provistas"
+
+    print(gui.is_only_session())
+    if not gui.is_only_session()[0]:
+        gui.close_session()
+        return False, "No se pudo iniciar sesión debido a que existen otras sesiones abiertas, \n" + \
+            "use la opción close_old_conn = True para cerrar sesiones antiguas"
 
     result = exec_transaction(gui=gui, tx=transaction)
     gui.close_session()

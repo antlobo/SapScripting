@@ -14,7 +14,7 @@ class SAP_Gui:
         2. Se abre la gui mediante la función open_gui()
         3. Se crea la sesión nueva mediante la función create_session()
         4. Se inicia sesión mediante la función login()
-        5. Se valida que se haya podido iniciar sesión mediante la función logged_in()
+        5. Se valida que se haya podido iniciar sesión mediante la función is_logged()
         6. Se ejecuta la transacción de SAP en el siguiente orden:
             1. open
             2. config
@@ -28,10 +28,11 @@ class SAP_Gui:
     __connection: Any
     __session: Any
 
-    def __init__(self, gui_path:str, name: str, instance_number: str) -> None:
+    def __init__(self, gui_path:str, name: str, instance_number: str, close_old_conn: bool = False) -> None:
         self.gui_path = gui_path
         self.name = name
         self.instance_number = instance_number
+        self.close_old_connections = close_old_conn
 
     @error_handler
     def open_gui(self):
@@ -52,15 +53,20 @@ class SAP_Gui:
             SapGuiAuto = None
             return None
 
-        self.__close_old_connections()
+        if self.close_old_connections:
+            self.__close_old_connections()
 
-        self.__connection = self.__application.Children(0)
+        self.__connection = self.__application.Children(
+            self.__application.Children.count - 1
+        )
         if not type(self.__connection) == win32com.client.CDispatch:
             self.__application = None
             SapGuiAuto = None
             return None
 
-        self.__session = self.__connection.Children(0)
+        self.__session = self.__connection.Children(
+            self.__connection.Children.count - 1
+        )
         if not type(self.__session) == win32com.client.CDispatch:
             self.__connection = None
             self.__application = None
@@ -108,16 +114,24 @@ class SAP_Gui:
         return self
 
     @error_handler
-    def logged_in(self) -> Tuple[bool, str]:
+    def is_logged(self) -> Tuple[bool, str]:
         """Revisa que se haya logrado iniciado sesión con base en 3 elementos que aparecen o desaparecen al inciar sesión
 
         Returns:
             bool: Regresa verdadero si se logra inciar sesión con las credenciales provistas, en caso contrario retorna Falso
         """
-        if self.__session.findById("wnd[1]/tbar[0]/btn[0]", False) or \
+        if self.__session and self.__session.findById("wnd[1]/tbar[0]/btn[0]", False) or \
                 self.__session.findById("wnd[0]/tbar[1]/btn[5]", False) is None or \
                 self.__session.findById("wnd[1]/usr/btnOK1", False):
             return True
+        return False
+
+    @error_handler
+    def is_only_session(self) -> Tuple[bool, str]:
+        if self.__session and self.__application:
+            print(f"{self.__application.Children.count=}{self.__connection.Children.count=}")
+            return self.__application.Children.count == 1 and \
+                self.__connection.Children.count == 1
         return False
 
     @error_handler
