@@ -1,6 +1,6 @@
-import sys
 from functools import wraps
 from typing import Any, Tuple
+from pywintypes import com_error
 
 
 def error_handler(func) -> Tuple[Any, str]:
@@ -9,7 +9,9 @@ def error_handler(func) -> Tuple[Any, str]:
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs), ""
-        except Exception:
-            return args[0], str(sys.exc_info()[1]).split(",")[4]
+        except com_error as e:
+            return args[0], str(e).split(",")[1]
+        except Exception as e:
+            return e
 
     return wrapper
