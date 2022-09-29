@@ -1,7 +1,7 @@
 from time import sleep
 import win32com.client
 from subprocess import call
-from typing import Any, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 from pathlib import Path
 
 from gui.error_handle import error_handler
@@ -44,6 +44,18 @@ class SAP_Gui:
         return self
 
     @error_handler
+    def get_available_sessions(self, conns: List[win32com.client.CDispatch]) -> Tuple[win32com.client.CDispatch, win32com.client.CDispatch]:
+        return [(conn, conn.Children(i)) for conn in conns for i in range(conn.Children.count)]
+
+    @error_handler
+    def is_session_busy(self, session: win32com.client.CDispatch) -> bool:
+        return session.Busy
+
+    @error_handler
+    def get_available_connections(self, app: win32com.client.CDispatch) -> List[win32com.client.CDispatch]:
+        return [app.Children(i) for i in range(app.Children.count - 1)]
+
+    @error_handler
     def create_session(self) -> Tuple[Optional['SAP_Gui'], str]:
         SapGuiAuto = win32com.client.GetObject("SAPGUI")
         if not type(SapGuiAuto) == win32com.client.CDispatch:
@@ -54,20 +66,30 @@ class SAP_Gui:
             SapGuiAuto = None
             return None
 
+        connections = self.get_available_connections(app=self.__application)[0]
+        conn_sessions = self.get_available_sessions(conns=connections)[0]
+        remaining_sessions = []
+        for sess in conn_sessions:
+            if self.is_session_busy(sess[1])[0]:
+                remaining_sessions.append(sess)
+            else:
+                sess[0].CloseSession(sess[1].Id)
+
         if self.close_old_connections:
             self.__close_old_connections()
 
-        self.__connection = self.__application.Children(
-            self.__application.Children.count - 1
-        )
+        if remaining_sessions:
+            self.__connection = remaining_sessions[0][0]
+            last_con = self.__application.Children(self.__application.Children.count - 1)
+            last_con.CloseSession((last_con.Children(self.__connection.Children.count - 1)).Id)
+        else:
+            self.__connection = self.__application.Children(self.__application.Children.count - 1)
         if not type(self.__connection) == win32com.client.CDispatch:
             self.__application = None
             SapGuiAuto = None
             return None
 
-        self.__session = self.__connection.Children(
-            self.__connection.Children.count - 1
-        )
+        self.__session = self.__connection.Children(self.__connection.Children.count - 1)
         if not type(self.__session) == win32com.client.CDispatch:
             self.__connection = None
             self.__application = None
@@ -83,6 +105,8 @@ class SAP_Gui:
         while self.__application.Children.count > 1:
             connection = self.__application.Children(0)
             session = connection.Children(0)
+            if session.Busy:
+                continue
             connection.closeSession(
                 str(session.Id).split("/")[-1]
             )
