@@ -64,7 +64,7 @@ def change_password(gui: sap_gui.SAP_Gui) -> bool:
 
 def select_transaction(transaction: str = "") -> Optional[Transaction]:
     if not transaction:
-        transaction = (input(f"Ingrese cuál transacción desea de la siguiente lista, {', '.join([val for val in transaction_list.keys()])}: ")).strip()
+        transaction = (input(f"[►] Ingrese cuál transacción desea de la siguiente lista, {', '.join([val for val in transaction_list.keys()])}: ")).strip()
 
     config = {
         "file_path": path,
@@ -74,7 +74,7 @@ def select_transaction(transaction: str = "") -> Optional[Transaction]:
     if transaction_class:
         transaction_fields = get_transaction_fields(transaction_class).items()
         for field, hint in transaction_fields:
-            value = (input(f"Ingrese el valor para {field}, {hint}: ")).split(",")
+            value = (input(f"[►] Ingrese el valor para {field}, {hint}: ")).split(",")
             if "coma" in str(hint).lower():
                 config[field] = [val.strip() for val in value]
             else:
@@ -120,9 +120,16 @@ def main() -> Tuple[bool, str]:
         return False, "No se pudo iniciar sesión con las credenciales provistas"
 
     if not gui.is_only_session()[0]:
-        gui.close_session()
-        return False, "No se pudo iniciar sesión debido a que existen otras sesiones abiertas, \n" + \
-            "use la opción close_old_conn = True para cerrar sesiones antiguas"
+        result = input("[►] Existe una o más sesiones abiertas, desea cerrarlas y continuar? (S/N)").strip()
+        if result.lower() == "s":
+            gui.close_old_connections = True
+            gui.open_gui()[0] \
+                .create_session()[0] \
+                .login(config["USER"], config["PASS"])
+        else:
+            gui.close_session()
+            return False, "No se pudo iniciar sesión debido a que existen otras sesiones abiertas, \n" + \
+                "use la opción close_old_conn = True para cerrar sesiones antiguas"
 
     result = exec_transaction(gui=gui, tx=transaction)
     gui.close_session()
@@ -138,4 +145,6 @@ def main() -> Tuple[bool, str]:
 
 
 if __name__ == "__main__":
-    print(main()[1])
+    result = main()
+    check_mark = "▲" if result[0] else "▼"
+    print(f"[{check_mark}] {result[1]}")
