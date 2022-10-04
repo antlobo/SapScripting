@@ -4,8 +4,11 @@ from subprocess import call
 from typing import Any, List, Optional, Tuple
 from pathlib import Path
 
-from gui.error_handle import error_handler
-from tx import Transaction
+from .error_handle import error_handler
+try:
+    from models import tx
+except ModuleNotFoundError:
+    from ..models import tx
 
 
 class SAP_Gui:
@@ -36,7 +39,7 @@ class SAP_Gui:
         self.close_old_connections = close_old_conn
 
     @error_handler
-    def open_gui(self):
+    async def open_gui(self):
         win32com.client.Dispatch("WScript.Shell")
         call(f'{Path(self.gui_path).joinpath("SAPgui.exe").as_posix()} {self.name} {self.instance_number}')
         sleep(20)
@@ -44,19 +47,19 @@ class SAP_Gui:
         return self
 
     @error_handler
-    def get_available_sessions(self, conns: List[win32com.client.CDispatch]) -> Tuple[win32com.client.CDispatch, win32com.client.CDispatch]:
+    async def get_available_sessions(self, conns: List[win32com.client.CDispatch]) -> Tuple[win32com.client.CDispatch, win32com.client.CDispatch]:
         return [(conn, conn.Children(i)) for conn in conns for i in range(conn.Children.count)]
 
     @error_handler
-    def is_session_busy(self, session: win32com.client.CDispatch) -> bool:
+    async def is_session_busy(self, session: win32com.client.CDispatch) -> bool:
         return session.Busy
 
     @error_handler
-    def get_available_connections(self, app: win32com.client.CDispatch) -> List[win32com.client.CDispatch]:
+    async def get_available_connections(self, app: win32com.client.CDispatch) -> List[win32com.client.CDispatch]:
         return [app.Children(i) for i in range(app.Children.count - 1)]
 
     @error_handler
-    def create_session(self) -> Tuple[Optional['SAP_Gui'], str]:
+    async def create_session(self) -> Tuple[Optional['SAP_Gui'], str]:
         SapGuiAuto = win32com.client.GetObject("SAPGUI")
         if not type(SapGuiAuto) == win32com.client.CDispatch:
             return None
@@ -66,11 +69,11 @@ class SAP_Gui:
             SapGuiAuto = None
             return None
 
-        connections = self.get_available_connections(app=self.__application)[0]
-        conn_sessions = self.get_available_sessions(conns=connections)[0]
+        connections = (await self.get_available_connections(app=self.__application))[0]
+        conn_sessions = (await self.get_available_sessions(conns=connections))[0]
         remaining_sessions = []
         for sess in conn_sessions:
-            if self.is_session_busy(sess[1])[0]:
+            if (await self.is_session_busy(sess[1]))[0]:
                 remaining_sessions.append(sess)
             else:
                 sess[0].CloseSession(sess[1].Id)
@@ -99,7 +102,7 @@ class SAP_Gui:
         return self
 
     @error_handler
-    def __close_old_connections(self) -> None:
+    async def __close_old_connections(self) -> None:
         """Cierra todas las ventanas abiertas de SAP Logon (conexiones abiertas)
         """
         while self.__application.Children.count > 1:
@@ -113,7 +116,7 @@ class SAP_Gui:
             connection.CloseConnection()
 
     @error_handler
-    def close_session(self) -> None:
+    async def close_session(self) -> None:
         """Cierra la ventana abierta de SAP Logon (sesión actual)
         """
         if self.__session:
@@ -123,7 +126,7 @@ class SAP_Gui:
             self.__application = None
 
     @error_handler
-    def login(self, user: str, password: str) -> Tuple['SAP_Gui', str]:
+    async def login(self, user: str, password: str) -> Tuple['SAP_Gui', str]:
         """Realiza el login en SAP Logon con el usuario y contraseña provistos
 
         Returns
@@ -139,7 +142,7 @@ class SAP_Gui:
         return self
 
     @error_handler
-    def is_logged(self) -> Tuple[bool, str]:
+    async def is_logged(self) -> Tuple[bool, str]:
         """Revisa que se haya logrado iniciado sesión con base en 3 elementos que aparecen o desaparecen al inciar sesión
 
         Returns:
@@ -152,14 +155,14 @@ class SAP_Gui:
         return False
 
     @error_handler
-    def is_only_session(self) -> Tuple[bool, str]:
+    async def is_only_session(self) -> Tuple[bool, str]:
         if self.__session and self.__application:
             return self.__application.Children.count == 1 and \
                 self.__connection.Children.count == 1
         return False
 
     @error_handler
-    def change_password(self, user: str, password: str, new_password: str) -> Tuple['SAP_Gui', str]:
+    async def change_password(self, user: str, password: str, new_password: str) -> Tuple['SAP_Gui', str]:
         if self.__session:
             self.__session.findById("wnd[0]/usr/txtRSYST-BNAME").text = user
             self.__session.findById("wnd[0]/usr/pwdRSYST-BCODE").text = password
@@ -171,12 +174,12 @@ class SAP_Gui:
         return self
 
     @error_handler
-    def open(self, tr: Transaction) -> Tuple['SAP_Gui', str]:
+    async def open(self, tr: tx.Transaction) -> Tuple['SAP_Gui', str]:
         if self.__session:
-            tr.open(self.__session)
+            await tr.open(self.__session)
         return self
 
-    def hasAccess(self, tr: Transaction) -> Tuple['SAP_Gui', str]:
+    async def hasAccess(self, tr: tx.Transaction) -> Tuple[bool, str]:
         """_summary_
 
         Returns
@@ -184,34 +187,35 @@ class SAP_Gui:
         _type_
             _description_
         """
-        return self.__session.Info.Transaction == tr.transaction_code
+        if self.__session:
+            return self.__session.Info.Transaction == tr.transaction_code
 
     @error_handler
-    def config(self, tr: Transaction) -> Tuple['SAP_Gui', str]:
+    async def config(self, tr: tx.Transaction) -> Tuple['SAP_Gui', str]:
         if self.__session:
-            tr.config(self.__session)
+            await tr.config(self.__session)
         return self
 
     @error_handler
-    def exec(self, tr: Transaction) -> Tuple['SAP_Gui', str]:
+    async def exec(self, tr: tx.Transaction) -> Tuple['SAP_Gui', str]:
         if self.__session:
-            tr.exec(self.__session)
+            await tr.exec(self.__session)
         return self
 
     @error_handler
-    def config_report(self, tr: Transaction) -> Tuple['SAP_Gui', str]:
+    async def config_report(self, tr: tx.Transaction) -> Tuple['SAP_Gui', str]:
         if self.__session:
-            tr.config_report(self.__session)
+            await tr.config_report(self.__session)
         return self
 
     @error_handler
-    def save(self, tr: Transaction) -> Tuple['SAP_Gui', str]:
+    async def save(self, tr: tx.Transaction) -> Tuple['SAP_Gui', str]:
         if self.__session:
-            tr.save(self.__session)
+            await tr.save(self.__session)
         return self
 
     @error_handler
-    def close(self, tr: Transaction) -> Tuple['SAP_Gui', str]:
+    async def close(self, tr: tx.Transaction) -> Tuple['SAP_Gui', str]:
         if self.__session:
-            tr.close(self.__session)
+            await tr.close(self.__session)
         return self

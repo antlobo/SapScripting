@@ -14,13 +14,13 @@ class System_Assets:
         self.file_name = file_name
         self.variant = "EQUIPO DE COMP"
 
-    def open(self, session: win32com.client.CDispatch) -> 'System_Assets':
+    async def open(self, session: win32com.client.CDispatch) -> 'System_Assets':
         session.findById("wnd[0]/tbar[0]/okcd").text = f"/n{self.transaction_code}"
         session.findById("wnd[0]").sendVKey(0)
 
         return self
 
-    def config(self, session: win32com.client.CDispatch) -> 'System_Assets':
+    async def config(self, session: win32com.client.CDispatch) -> 'System_Assets':
         session.findById("wnd[0]/tbar[1]/btn[17]").press()
         session.findById("wnd[1]/usr/txtV-LOW").text = self.variant
         session.findById("wnd[1]/usr/txtENAME-LOW").text = ""
@@ -35,12 +35,12 @@ class System_Assets:
 
         return self
 
-    def exec(self, session: win32com.client.CDispatch) -> 'System_Assets':
+    async def exec(self, session: win32com.client.CDispatch) -> 'System_Assets':
         session.findById("wnd[0]/tbar[1]/btn[8]").press()
 
         return self
 
-    def config_report(self, session: win32com.client.CDispatch) -> 'System_Assets':
+    async def config_report(self, session: win32com.client.CDispatch) -> 'System_Assets':
         session.findById("wnd[0]/tbar[1]/btn[32]").press()
         session.findById("wnd[1]/usr/tabsG_TS_ALV/tabpALV_M_R1/ssubSUB_DYN0510:SAPLSKBH:0620/cntlCONTAINER1_LAYO/shellcont/shell").currentCellRow = 3
         session.findById("wnd[1]/usr/tabsG_TS_ALV/tabpALV_M_R1/ssubSUB_DYN0510:SAPLSKBH:0620/cntlCONTAINER1_LAYO/shellcont/shell").selectedRows = "3"
@@ -56,7 +56,7 @@ class System_Assets:
         session.findById("wnd[1]/tbar[0]/btn[0]").press()
         return self
 
-    def save(self, session: win32com.client.CDispatch) -> 'System_Assets':
+    async def save(self, session: win32com.client.CDispatch) -> 'System_Assets':
         session.findById("wnd[0]").sendVKey(9)
         session.findById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[1,0]").select()
         session.findById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[1,0]").setFocus()
@@ -71,6 +71,6 @@ class System_Assets:
 
         return self
 
-    def close(self, session: win32com.client.CDispatch) -> None:
+    async def close(self, session: win32com.client.CDispatch) -> None:
         for _ in range(5):
             session.findById("wnd[0]").sendVKey(12)

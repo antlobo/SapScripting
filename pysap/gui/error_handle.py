@@ -6,9 +6,9 @@ from pywintypes import com_error
 def error_handler(func) -> Tuple[Any, str]:
 
     @wraps(func)
-    def wrapper(*args, **kwargs):
+    async def wrapper(*args, **kwargs):
         try:
-            return func(*args, **kwargs), ""
+            return await func(*args, **kwargs), ""
         except com_error as e:
             return args[0], str(e).split(",")[1]
         except Exception as e:

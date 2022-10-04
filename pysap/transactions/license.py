@@ -14,13 +14,13 @@ class License:
         self.file_name = file_name
         self.variant = "LIC*"
 
-    def open(self, session: win32com.client.CDispatch) -> 'License':
+    async def open(self, session: win32com.client.CDispatch) -> 'License':
         session.findById("wnd[0]/tbar[0]/okcd").text = f"/n{self.transaction_code}"
         session.findById("wnd[0]").sendVKey(0)
 
         return self
 
-    def config(self, session: win32com.client.CDispatch) -> 'License':
+    async def config(self, session: win32com.client.CDispatch) -> 'License':
         session.findById("wnd[0]/tbar[1]/btn[17]").press()
         session.findById("wnd[1]/usr/txtV-LOW").text = self.variant
         session.findById("wnd[1]/usr/txtENAME-LOW").text = ""
@@ -35,15 +35,15 @@ class License:
 
         return self
 
-    def exec(self, session: win32com.client.CDispatch) -> 'License':
+    async def exec(self, session: win32com.client.CDispatch) -> 'License':
         session.findById("wnd[0]/tbar[1]/btn[8]").press()
 
         return self
 
-    def config_report(self, session: win32com.client.CDispatch) -> 'License':
+    async def config_report(self, session: win32com.client.CDispatch) -> 'License':
         return self
 
-    def save(self, session: win32com.client.CDispatch) -> 'License':
+    async def save(self, session: win32com.client.CDispatch) -> 'License':
         session.findById("wnd[0]").sendVKey(9)
         session.findById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[1,0]").select()
         session.findById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[1,0]").setFocus()
@@ -58,6 +58,6 @@ class License:
 
         return self
 
-    def close(self, session: win32com.client.CDispatch) -> None:
+    async def close(self, session: win32com.client.CDispatch) -> None:
         for _ in range(5):
-            session.findById("wnd[0]").sendVKey(12)
+            session.findById("wnd[0]/tbar[0]/btn[12]").press()
