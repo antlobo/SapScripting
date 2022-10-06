@@ -31,7 +31,6 @@ async def test_main_no_valid_transaction(base_tx_config):
         "company_code": ["1000"]
     }
     result = await main.main(config, path, file_name, transaction_name, tx_config)
-    print(result[1])
     assert "no configurada" in result[1]
 
 
@@ -39,7 +38,7 @@ async def test_main_no_valid_transaction(base_tx_config):
 async def test_main_invalid_auth(base_tx_config):
     transaction_name = "licenciamiento"
     config = base_tx_config[0]
-    config["USER"] = "prueba"
+    config["PYSAP_USER"] = "prueba"
     path = base_tx_config[1].get("file_path")
     file_name = base_tx_config[1].get("file_name")
     tx_config = {
@@ -48,5 +47,4 @@ async def test_main_invalid_auth(base_tx_config):
         "company_code": ["1000"]
     }
     result = await main.main(config, path, file_name, transaction_name, tx_config)
-    print(result[1])
     assert "credenciales provistas" in result[1]

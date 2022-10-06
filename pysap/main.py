@@ -57,9 +57,10 @@ async def main(
     tx_config: dict = {}
 ) -> Tuple[bool, str]:
 
-    has_config, result, config = get_config()
-    if not has_config:
-        return has_config, result
+    if not config:
+        has_config, result, config = get_config()
+        if not has_config:
+            return has_config, result
 
     path = config["PYSAP_PATH"]
     file_name = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.xls"
@@ -103,7 +104,7 @@ async def main(
         config["PYSAP_PASS_LAST_CHANGE"], "%d/%m/%Y"
     ).date()
     result = await check_password(gui, last_change_date, config)
-    print(result)
+
     if not result[0]:
         return result
 
