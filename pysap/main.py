@@ -100,10 +100,7 @@ async def main(
         config=tx_config
     )
 
-    last_change_date = datetime.strptime(
-        config["PYSAP_PASS_LAST_CHANGE"], "%d/%m/%Y"
-    ).date()
-    result = await check_password(gui, last_change_date, config)
+    result = await check_password(gui, config)
 
     if not result[0]:
         return result

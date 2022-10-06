@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Tuple
 
@@ -71,10 +71,12 @@ async def change_password(
 
 async def check_password(
     gui: sap_gui.SAP_Gui,
-    last_change_date: date,
     config: dict
 ) -> Tuple[bool, str, dict]:
     today = datetime.now().date()
+    last_change_date = datetime.strptime(
+        config["PYSAP_PASS_LAST_CHANGE"], "%d/%m/%Y"
+    ).date()
     if (today - last_change_date).days >= 30:
         result = await change_password(gui=gui, config=config)
         if not result[0]:
