@@ -6,10 +6,12 @@ try:
     import transactions
     from gui import sap_gui
     from models.tx import Transaction
+    from settings import write_config
 except ModuleNotFoundError:
     from .. import transactions
     from ..gui import sap_gui
     from ..models.tx import Transaction
+    from ..settings import write_config
 
 
 async def get_transaction_class(
@@ -30,18 +32,6 @@ async def get_transaction_fields(transaction_class: Transaction) -> dict:
 
 
 async def create_new_password(current_pass: str) -> str:
-    """Crea una nueva contraseña para SAP con base en la actual
-
-    Parameters
-    ----------
-    current_pass : str
-        Contraseña de SAP actual con patrón: CadenaSinNumero+AñoMes = Prueba201701
-
-    Returns
-    -------
-    str
-        Devuelve una nueva contraseña can base en la actual cambiando la fecha dentro de la contraseña
-    """
     today = datetime.now().date()
     pass_without_date = current_pass.split('2')[0]
     new_pass = f"{pass_without_date}{today.strftime('%Y%m')}"
@@ -55,45 +45,44 @@ async def create_new_password(current_pass: str) -> str:
 async def change_password(
     gui: sap_gui.SAP_Gui,
     config: dict
-) -> bool:
-    """_summary_
-
-    Parameters
-    ----------
-    gui : sap_gui.SAP_Gui
-        _description_
-
-    Returns
-    -------
-    bool
-        _description_
-    """
-    last_pass = config["PASS"]
+) -> Tuple[bool, dict]:
+    last_pass = config["PYSAP_PASSWORD"]
     new_pass = await create_new_password(last_pass)
     await gui.open_gui()
     await gui.create_session()
-    result = await gui.change_password(config["USER"], last_pass, new_pass)
-    if result[1] != "":
-        return False
+    result = await gui.change_password(config["PYSAP_USER"], last_pass, new_pass)
 
-    # TODO: Agregar codigo cambio de variables ambientales
-    config["LAST_PASS"] = last_pass
-    config["PASS"] = new_pass
-    config["PASS_LAST_CHANGE"] = datetime.now().date().strftime("%d/%m/%Y")
-    return True
+    if result[1] != "":
+        return False, {}
+
+    write_config(
+        {
+            "PYSAP_LAST_PASS": last_pass,
+            "PYSAP_PASSWORD": new_pass,
+            "PYSAP_PASS_LAST_CHANGE": datetime.now().date().strftime("%d/%m/%Y")
+        }
+    )
+
+    config["PYSAP_LAST_PASS"] = last_pass
+    config["PYSAP_PASSWORD"] = new_pass
+    config["PYSAP_PASS_LAST_CHANGE"] = datetime.now().date().strftime("%d/%m/%Y")
+    return True, config
 
 
 async def check_password(
     gui: sap_gui.SAP_Gui,
-    last_change_date: date
-) -> Tuple[bool, str]:
-
+    last_change_date: date,
+    config: dict
+) -> Tuple[bool, str, dict]:
     today = datetime.now().date()
     if (today - last_change_date).days >= 30:
-        if not await change_password(gui=gui):
-            return False, "No se pudo realizar el cambio de contraseña"
+        result = await change_password(gui=gui, config=config)
+        if not result[0]:
+            return False, "No se pudo realizar el cambio de contraseña", {}
 
-    return True, ""
+        return True, "", result[1]
+    else:
+        return True, "", config
 
 
 async def exec_transaction(

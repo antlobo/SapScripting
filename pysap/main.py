@@ -3,8 +3,6 @@ import asyncio
 from datetime import datetime
 from typing import Tuple
 
-from dotenv import dotenv_values
-
 if __name__ != "__main__":
     from . import transactions
     from .app import (
@@ -15,8 +13,10 @@ if __name__ != "__main__":
         login,
         check_file_exist
     )
+    from .app.cli import read_transaction_num, read_transaction_config
     from .gui import sap_gui
     from .models.tx import Transaction
+    from .settings import get_config
 else:
     import transactions
     from app import (
@@ -27,53 +27,58 @@ else:
         login,
         check_file_exist
     )
+    from app.cli import read_transaction_num, read_transaction_config
     from gui import sap_gui
     from models.tx import Transaction
+    from settings import get_config
 
 
-async def get_transaction_name() -> str:
-    tx_options = '\n'.join(
-        [
-            f"{i}. {val}"
-            for i, val in enumerate(transactions.transaction_list.keys(), 1)
-        ]
-    )
-    transaction_num = (
-        input(f"[►] Ingrese el número de la transacción que desea ejecutar: \n{tx_options}\n")
-    ).strip()
-    return [
-        (tx.split(".")[1]).strip()
-        for tx in tx_options.split("\n")
-        if tx.split(".")[0] == transaction_num
-    ][0]
+async def get_transaction_name() -> Tuple[bool, str]:
+    options_len = len(transactions.transaction_list)
+    transaction_num = read_transaction_num(transactions.transaction_list)
+    if transaction_num.isdigit() and (1 <= int(transaction_num) <= options_len ):
+        return True, list(
+            transactions.transaction_list.keys()
+        )[int(transaction_num) - 1]
+
+    return False, f"Opción incorrecta, debe ingresar un número entre 1 y {options_len}"
 
 async def get_transaction_config(transaction_class: Transaction, config: dict) -> dict:
     fields = await get_transaction_fields(transaction_class)
-    for field, hint in fields:
-        value = (input(f"[►] Ingrese el valor para {field}, {hint}: ")).split(",")
-        if "coma" in str(hint).lower():
-            config[field] = [val.strip() for val in value]
-        else:
-            config[field] = value
-
-    return config
+    new_config = read_transaction_config(config, fields)
+    return new_config
 
 
 async def main(
-    config: dict,
-    path: str,
-    file_name: str,
+    config: dict = {},
+    path: str = "",
+    file_name: str = "",
     transaction_name: str = "",
     tx_config: dict = {}
 ) -> Tuple[bool, str]:
+
+    has_config, result, config = get_config()
+    if not has_config:
+        return has_config, result
+
+    path = config["PYSAP_PATH"]
+    file_name = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.xls"
+
     gui = sap_gui.SAP_Gui(
-        gui_path=config["GUI_PATH"],
-        name=config["CONNECTION_NAME"],
-        instance_number=config["INSTANCE_NUMBER"]
+        gui_path=config["PYSAP_GUI_PATH"],
+        name=config["PYSAP_CONNECTION_NAME"],
+        instance_number=config["PYSAP_INSTANCE_NUMBER"]
     )
 
     if not transaction_name:
-        transaction_name = await get_transaction_name()
+        result = await get_transaction_name()
+    else:
+        result = True, transaction_name
+
+    if not result[0]:
+        return result
+
+    transaction_name = result[1]
 
     result = await get_transaction_class(transaction_name)
     if not result[0]:
@@ -95,13 +100,16 @@ async def main(
     )
 
     last_change_date = datetime.strptime(
-        config["PASS_LAST_CHANGE"], "%d/%m/%Y"
+        config["PYSAP_PASS_LAST_CHANGE"], "%d/%m/%Y"
     ).date()
-    result = await check_password(gui, last_change_date)
+    result = await check_password(gui, last_change_date, config)
+    print(result)
     if not result[0]:
         return result
 
-    result = await login(gui, config["USER"], config["PASSWORD"])
+    config = result[2]
+
+    result = await login(gui, config["PYSAP_USER"], config["PYSAP_PASSWORD"])
     if not result[0]:
         return result
 
@@ -114,9 +122,6 @@ async def main(
     return await check_file_exist(path, transaction.file_name)
 
 if __name__ == "__main__":
-    config = dotenv_values(".env")
-    path = config["PATH"]
-    file_name = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.xls"
-    result = asyncio.run(main(config, path, file_name))
+    result = asyncio.run(main())
     check_mark = "▲" if result[0] else "▼"
     print(f"[{check_mark}] {result[1]}")

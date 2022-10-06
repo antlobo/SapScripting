@@ -167,10 +167,11 @@ class SAP_Gui:
             self.__session.findById("wnd[0]/usr/txtRSYST-BNAME").text = user
             self.__session.findById("wnd[0]/usr/pwdRSYST-BCODE").text = password
             self.__session.findById("wnd[0]/tbar[1]/btn[5]").press()
-            self.__session.findById("wnd[1]/usr/pwdRSYST-NCODE").text = new_password
-            self.__session.findById("wnd[1]/usr/pwdRSYST-NCOD2").text = new_password
-            self.__session.findById("wnd[1]/tbar[0]/btn[0]").press()
-            self.__session.findById("wnd[2]/tbar[0]/btn[0]").press()
+            if self.__session.findById("wnd[1]/usr/pwdRSYST-NCODE", False):
+                self.__session.findById("wnd[1]/usr/pwdRSYST-NCODE").text = new_password
+                self.__session.findById("wnd[1]/usr/pwdRSYST-NCOD2").text = new_password
+                self.__session.findById("wnd[1]/tbar[0]/btn[0]").press()
+                self.__session.findById("wnd[2]/tbar[0]/btn[0]").press()
         return self
 
     @error_handler
